@@ -1,0 +1,17 @@
+from pathlib import Path
+
+
+# URLs
+MODEL = "phi3-expert:latest"
+AGENT_URL = "http://localhost:11434"
+
+URL = "http://localhost:8000" # fastapi server
+
+
+# Paths
+ROOT_PATH = Path(__file__).parent.parent
+SRC_PATH = ROOT_PATH / "src"
+
+TOOLS_PATH = SRC_PATH / "agents" / "tools"
+
+print(ROOT_PATH)

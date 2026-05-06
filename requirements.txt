@@ -1,0 +1,13 @@
+langgraph
+langchain-core
+langchain-openai
+langchain-ollama
+uvicorn
+fastapi
+requests
+qdrant-client
+Wikipedia-API
+nltk
+pandas 
+unidecode
+sentence-transformers

@@ -1,0 +1,3 @@
+# TODO:
+- BUG de réponse: Lorsque l'on entre "Bonjour", l'agent renvoie son prompt.
+- Limiter l'utilisation des tools: L'agent ne doit utiliser les tools uniquement lorsque cela est nécessaire.

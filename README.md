@@ -2,65 +2,105 @@
 
 ## Overview
 
-This project aims to provide an **assistant agent** that can answer **general-knowledge questions** with **grounding in Wikipedia**. A local **LLM** (via **Ollama**) drives a **LangGraph** workflow; supporting code fetches and normalizes Wikipedia content, optionally indexes article titles and embeddings in **Qdrant** for retrieval, and exposes the agent over a small **FastAPI** HTTP API (and an optional CLI).
+`mcp-serv` is a local assistant that answers general-knowledge questions with grounding in Wikipedia.
 
-The Wikipedia side is implemented with **Wikipedia-API** (live summaries / text) and tooling under `src/agents/tools/wiki_tool/` to build and query a vector store when you need scale or semantic search over titles.
+A local LLM (via **Ollama**) drives a **LangGraph** agent. The agent can call a Wikipedia tool that:
+
+1. Retrieves candidate article titles from a **Qdrant** vector store (RAG over title embeddings).
+2. Fetches matching page content from Wikipedia (**Wikipedia-API**).
+3. Returns that content to the LLM as tool output.
+
+The HTTP surface is a small **FastAPI** API. An optional CLI talks to the same API.
 
 ## Requirements
 
-- **Python** 3.12+ (see `.python-version` if you use pyenv / uv)
-- **[Ollama](https://ollama.com/)** running locally, with the model configured in `src/config.py` (default: `phi3-expert:latest`)
-- **[Qdrant](https://qdrant.tech/)** (optional, only for the wiki vector store pipeline), default URL `http://localhost:6333`
+- **Python** 3.12+ (see `.python-version`)
+- **[Ollama](https://ollama.com/)** running locally, with the model configured in `src/config.py` (default: `model-expert:latest` at `http://localhost:11434`)
+- **[Qdrant](https://qdrant.tech/)** for the wiki RAG pipeline (default: `http://localhost:6333`)
+
+## Architecture
+
+```
+User → FastAPI /ask → LangGraph
+                         │
+                         ▼
+                   response (ChatOllama + tools)
+                         │
+            ┌────────────┴────────────┐
+            │ tool_calls?             │ no
+            ▼                         ▼
+         tools (ToolNode)            END
+            │
+            ▼
+    wikipedia_search(query)
+            │
+            ▼
+    rag_search → Qdrant titles → Wikipedia page text
+            │
+            └──────────► response (again)
+```
+
+Key pieces:
+
+| Piece | Role |
+|-------|------|
+| `src/agents/graph_agent.py` | Compiled LangGraph: `response` ↔ `tools` loop with `MemorySaver` checkpointing |
+| `src/agents/tools/wiki_tool/main.py` | LangChain `@tool` `wikipedia_search` |
+| `src/agents/tools/wiki_tool/domain/ai/rag.py` | Vector query against Qdrant (`col_wiki_titles`) |
+| `src/agents/tools/wiki_tool/domain/search/wiki_search.py` | Title → Wikipedia content fetch |
+| `src/api/endpoints.py` | FastAPI app (`/health`, `/ask`) |
 
 ## Repository structure
 
-Paths below are relative to the repository root. Omitted: `.venv/`, `__pycache__/`, build artifacts, and `qdrant_storage/` (local Qdrant data; see `.gitignore`).
+Paths relative to the repository root. Omitted: `.venv/`, `__pycache__/`, build artifacts, and `qdrant_storage/`.
 
 ```
-wikipedia-agent/
+mcp-serv/
 ├── src/
 │   ├── api/
-│   │   └── endpoints.py     # FastAPI app: /health, /ask
+│   │   └── endpoints.py          # FastAPI: GET /health, POST /ask
 │   ├── agents/
-│   │   ├── agent_state.py   # LangGraph state (messages, etc.)
-│   │   ├── graph_agent.py   # Graph definition + compiled graph (Ollama)
-│   │   ├── io.py            # CLI conversation, formatting helpers
+│   │   ├── agent_state.py        # LangGraph state (messages, …)
+│   │   ├── graph_agent.py        # Graph + Ollama tool-calling agent
+│   │   ├── io.py                 # Question formatting + CLI conversation
 │   │   ├── tools/
-│   │   │   └── wiki_tool/   # Wikipedia + Qdrant pipeline
-│   │   │       ├── client.py
-│   │   │       ├── config.py
+│   │   │   └── wiki_tool/        # Wikipedia + Qdrant RAG
+│   │   │       ├── main.py       # wikipedia_search tool
+│   │   │       ├── client.py     # Qdrant client
+│   │   │       ├── config.py     # Collection, encoder, RAG thresholds
 │   │   │       ├── wiki_utils.py
-│   │   │       ├── main.py
-│   │   │       ├── data/    # e.g. wiki_sample, wiki_titles (title lists)
+│   │   │       ├── data/         # Title lists (wiki_sample, wiki_titles)
 │   │   │       ├── domain/
-│   │   │       │   └── wiki_search.py   # Wikipedia client (thread-local)
+│   │   │       │   ├── ai/
+│   │   │       │   │   ├── rag.py
+│   │   │       │   │   └── build_vectorstore.py
+│   │   │       │   ├── search/
+│   │   │       │   │   ├── wiki_search.py
+│   │   │       │   │   └── wiki_fetch.py
+│   │   │       │   └── wiki_search.py
 │   │   │       └── scripts/
 │   │   │           ├── build_vectorstore.py
+│   │   │           ├── update_vectorstore.py
 │   │   │           └── test.py
 │   │   └── utils/
 │   │       ├── checking.py
 │   │       ├── cli_responses.py
 │   │       ├── loader_utils/
-│   │       │   ├── load_data.py
-│   │       │   └── load_model.py
 │   │       └── transform_utils/
-│   │           ├── encoder.py
-│   │           └── process_data.py
-│   ├── app.py               
-│   └── config.py            # Model URL, paths, tool root
-├── main.py                  
+│   ├── app.py                    # CLI entrypoint (python -m src.app)
+│   └── config.py                 # MODEL, AGENT_URL, URL, paths
+├── main.py
 ├── Makefile
 ├── pyproject.toml
 ├── requirements.txt
 ├── uv.lock
-├── .gitignore
 ├── .python-version
 └── README.md
 ```
 
 ## Setup
 
-Create and activate a virtual environment, then install the project in editable mode so `src.*` imports resolve correctly.
+Create and activate a virtual environment, then install the project in editable mode so `src.*` imports resolve.
 
 **Using uv (recommended):**
 
@@ -84,19 +124,40 @@ Lockfile users can sync from `uv.lock`:
 uv sync
 ```
 
-A legacy `requirements.txt` exists for Makefile-based installs; prefer `pyproject.toml` / `uv.lock` for a single source of truth.
+A legacy `requirements.txt` exists for Makefile-based installs; prefer `pyproject.toml` / `uv.lock`.
 
-### NLTK data (wiki / text processing)
+### NLTK data
 
-If you use modules that load NLTK stopwords, download the corpus once:
+Text normalization uses French stopwords. Download once if needed:
 
 ```powershell
 python -c "import nltk; nltk.download('stopwords')"
 ```
 
+## Configuration
+
+Edit `src/config.py`:
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `MODEL` | `model-expert:latest` | Ollama model name |
+| `AGENT_URL` | `http://localhost:11434` | Ollama base URL |
+| `URL` | `http://localhost:8000` | FastAPI base URL (CLI client) |
+
+Wiki / RAG settings live in `src/agents/tools/wiki_tool/config.py`:
+
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant endpoint |
+| `COLLECTION_NAME` | `col_wiki_titles` | Vector collection |
+| `WIKI_FILE_PATH` | `…/data/wiki_sample` | Title list used to build embeddings |
+| `ENCODER_MODEL` | `BAAI/bge-m3` | Sentence-transformers model |
+| `RAG_THRESHOLD` | `0.6` | Minimum similarity score |
+| `RAG_RETRIEVE_LIMIT` | `10` | Max titles retrieved |
+
 ## Run the HTTP API
 
-From the **repository root** (so `src` is importable):
+From the **repository root**, with the venv activated:
 
 ```powershell
 uvicorn src.api.endpoints:agent_app --reload --host 127.0.0.1 --port 8000
@@ -106,35 +167,55 @@ Endpoints:
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Liveness check |
-| `POST` | `/ask` | Runs the compiled LangGraph with the user message body |
+| `GET` | `/health` | Liveness check (`{"status": "200"}`) |
+| `POST` | `/ask?user_req=…` | Runs the compiled LangGraph; returns `{"response": "…"}` |
 
-Ollama URL and model name are set in `src/config.py` (`AGENT_URL`, `MODEL`).
+Example:
+
+```powershell
+curl -X POST "http://127.0.0.1:8000/ask?user_req=Qui%20est%20Faker%20%3F"
+```
+
+Ollama must be running and the configured model available before calling `/ask`.
 
 ## CLI conversation (optional)
+
+With the API already running:
 
 ```powershell
 python -m src.app
 ```
 
-This runs the interactive flow wired in `src/app.py` / `src/agents/io.py`.
+Commands in the CLI:
+
+- `/help` — show help
+- `/bye` — exit
 
 ## Wiki tool: build Qdrant embeddings
 
+Before the agent can ground answers via RAG, build (or rebuild) the vector store.
+
 Script: `src/agents/tools/wiki_tool/scripts/build_vectorstore.py`
 
-It reads title lists from paths configured in `src/agents/tools/wiki_tool/config.py` (`WIKI_FILE_PATH`), fetches Wikipedia summaries, encodes them with the configured sentence-transformers model, and upserts vectors into Qdrant.
+It reads titles from `WIKI_FILE_PATH`, fetches Wikipedia summaries, encodes them with `ENCODER_MODEL`, and upserts points into Qdrant (`COLLECTION_NAME`).
 
-Ensure Qdrant is up and paths / `COLLECTION_NAME` / `ENCODER_MODEL` match your environment. Run from repo root with the venv activated, for example:
+Ensure Qdrant is up, then from the repo root:
 
 ```powershell
 python src/agents/tools/wiki_tool/scripts/build_vectorstore.py
 ```
 
+Related scripts under `src/agents/tools/wiki_tool/scripts/`:
+
+- `update_vectorstore.py` — update existing embeddings
+- `test.py` — quick checks
+
+If the collection does not exist yet, `rag_query` will attempt to create/populate it via `create_update_embeddings` on first use (this can be slow).
+
 ## Development
 
-- Install in editable mode (`pip install -e .` or `uv pip install -e .`) before running tests or scripts that import `src.*`.
-- On Windows, the Makefile `install` target uses `uv` and `requirements.txt`; adjust if you standardize on `uv sync` only.
+- Install in editable mode (`pip install -e .` or `uv pip install -e .`) before running the API, CLI, or scripts that import `src.*`.
+- On Windows, the Makefile `install` target uses `uv` and `requirements.txt`; prefer `uv sync` / `uv pip install -e .` when possible.
 
 ## License
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 # URLs
-MODEL = "phi3-expert:latest"
+MODEL = "model-expert:latest"
 AGENT_URL = "http://localhost:11434"
 
 URL = "http://localhost:8000" # fastapi server

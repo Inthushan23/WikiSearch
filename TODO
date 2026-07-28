@@ -1,3 +1,2 @@
 # TODO:
-- BUG de réponse: Lorsque l'on entre "Bonjour", l'agent renvoie son prompt.
-- Limiter l'utilisation des tools: L'agent ne doit utiliser les tools uniquement lorsque cela est nécessaire.
+- Limiter l'utilisation des tools : l'agent ne doit pas utiliser les tools lorsque la réponse a déjà été recherchée auparavant, car la même requête est exécutée plusieurs fois pour répondre à des questions en lien avec le même sujet.

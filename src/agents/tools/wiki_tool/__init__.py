@@ -1,2 +1,2 @@
-from .main import ask_rag
+from .main import wikipedia_search
 

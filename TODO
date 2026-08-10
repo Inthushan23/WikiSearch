@@ -1,2 +1,2 @@
 # TODO:
-- Limiter l'utilisation des tools : l'agent ne doit pas utiliser les tools lorsque la réponse a déjà été recherchée auparavant, car la même requête est exécutée plusieurs fois pour répondre à des questions en lien avec le même sujet.
+- Le génération d'une réponse par RAG ne fonctionne pas

@@ -17,7 +17,7 @@ def invoke(user_req: str):
     f_quest = format_question(user_req)
     async def generator():
         async for (chunk, metadata) in comp_graph.astream(f_quest, stream_mode= "messages", config=config):
-            if metadata["langgraph_node"] == "response":
+            if metadata["langgraph_node"] in ["response", "agent"]:
                 if chunk.content:
                     yield chunk.content
 

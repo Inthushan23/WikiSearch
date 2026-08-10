@@ -22,14 +22,13 @@ def response(state: AgentState):
 
             
 def route_tools(state: AgentState):
-    
+    print("HISTORIQUE: ", state["messages"])
     last_msg = state["messages"][-1]
     if getattr(last_msg, "tool_calls", None):
         return "tools"
     return END
 
 def agent(state: AgentState):
-    print("HISTORIQUE: ", state["messages"])
     messages = [*state["messages"]]
     res = load_llm.invoke(messages) 
     return {"messages": [res]}

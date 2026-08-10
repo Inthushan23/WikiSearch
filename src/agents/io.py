@@ -23,7 +23,6 @@ def delete_last_line():
 def write_thinking():
     print("<AI> ", end = "", flush= True)
     message = "Thinking..."
-
     for c in message:
         sys.stdout.write(c)
         sys.stdout.flush()

@@ -1,8 +1,5 @@
-import json
-import re
-
 from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import SystemMessage
 from langchain_ollama import ChatOllama
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
@@ -17,22 +14,24 @@ load_llm = ChatOllama(model= MODEL, base_url= AGENT_URL)
 tools = [wikipedia_search]
 llm = load_llm.bind_tools(tools=tools)
 
-mask = re.compile(r'\{.*"outputs".*\}', re.DOTALL)
-
 
 def response(state: AgentState):
-    messages = [SystemMessage(content="Tu es un assistant. Utilise wiki_tool pour les questions factuelles."), *state["messages"]]
+    messages = [SystemMessage(content="Tu es un assistant qui doit répondre aux requetes de l'utilisateur. Tu dois  toujours founir une réponse. Utilise wiki_tool pour les questions factuelles."), *state["messages"]]
     res = llm.invoke(messages) 
-    print("TEST: ", messages)
-    return {"context": "", "messages": [res]}
-
+    return {"messages": [res]}
 
             
 def route_tools(state: AgentState):
+    print("HISTORIQUE: ", state["messages"])
     last_msg = state["messages"][-1]
     if getattr(last_msg, "tool_calls", None):
         return "tools"
     return END
+
+def agent(state: AgentState):
+    messages = [*state["messages"]]
+    res = load_llm.invoke(messages) 
+    return {"messages": [res]}
 
 tool_node = ToolNode(tools)
 
@@ -41,10 +40,12 @@ graph = StateGraph(AgentState)
 
 graph.add_node("response", response)
 graph.add_node("tools", tool_node)
+graph.add_node("agent", agent)
 
 graph.add_edge(START, "response")
 graph.add_conditional_edges("response", route_tools, {"tools": "tools", END: END})
-graph.add_edge("tools", "response")
+graph.add_edge("tools", "agent")
+graph.add_edge("agent", END)
 
 checkpoiter = MemorySaver()
 comp_graph = graph.compile(checkpointer=checkpoiter)

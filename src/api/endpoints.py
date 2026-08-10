@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+
 from src.agents.graph_agent import comp_graph
 from src.agents.io import format_question
 
@@ -13,7 +15,11 @@ def check_sanity():
 def invoke(user_req: str):
     config = {"configurable": {"thread_id": "user-123"}}
     f_quest = format_question(user_req)
-    res = comp_graph.invoke(f_quest, config=config)
+    async def generator():
+        async for (chunk, metadata) in comp_graph.astream(f_quest, stream_mode= "messages", config=config):
+            if metadata["langgraph_node"] in ["response", "agent"]:
+                if chunk.content:
+                    yield chunk.content
 
-    return {"response": res["messages"][-1].content}
+    return StreamingResponse(generator(), media_type= "text/plain")
     

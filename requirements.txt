@@ -11,3 +11,5 @@ nltk
 pandas 
 unidecode
 sentence-transformers
+chainlit
+langgraph-checkpoint-sqlite

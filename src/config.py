@@ -4,8 +4,7 @@ from pathlib import Path
 # URLs
 MODEL = "model-expert:latest"
 # AGENT_URL = "http://localhost:11434"
-AGENT_URL = "https://projector-reveals-beliefs-status.trycloudflare.com"
-
+AGENT_URL = "https://old-steady-casinos-brand.trycloudflare.com"
 URL = "http://localhost:8000" # fastapi server
 
 

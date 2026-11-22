@@ -3,9 +3,9 @@ import requests
 import time 
 import sys
 
-from src.config import URL, RESPONCE_LATENCY
-from src.agents.utils.checking import sanity_check
-from src.agents.utils.cli_responses import help
+from config import URL, RESPONCE_LATENCY
+from agents.utils.checking import sanity_check
+from agents.utils.cli_responses import help
 
 
 def format_question(user_quest):

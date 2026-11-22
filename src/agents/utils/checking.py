@@ -1,6 +1,6 @@
 import requests 
 
-from src.config import URL
+from config import URL
 
 
 def sanity_check():

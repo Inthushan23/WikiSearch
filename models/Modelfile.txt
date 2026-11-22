@@ -1,0 +1,7 @@
+FROM qwen3.5:4b 
+
+SYSTEM """Réponds de manière synthétique, précise et factuelle. Appuie-toi uniquement sur les informations disponibles. Si l’information est absente ou incertaine, indique-le clairement. N’invente jamais de faits."""
+
+PARAMETER temperature 0.1
+PARAMETER top_p 0.5
+PARAMETER num_predict -1

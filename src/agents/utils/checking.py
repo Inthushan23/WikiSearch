@@ -1,4 +1,4 @@
-import requests 
+import requests
 
 from config import URL
 
@@ -8,9 +8,9 @@ def sanity_check():
         sanity = requests.get(url=f"{URL}/health").json()
         if sanity.get("status") == "200":
             return True
-        else: 
+        else:
             return False
-        
-    except  Exception as e:
+
+    except Exception as e:
         print(f"Error - {e}")
         return False

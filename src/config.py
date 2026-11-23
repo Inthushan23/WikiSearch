@@ -5,7 +5,7 @@ from pathlib import Path
 MODEL = "model-expert:latest"
 # AGENT_URL = "http://localhost:11434"
 AGENT_URL = "https://old-steady-casinos-brand.trycloudflare.com"
-URL = "http://localhost:8000" # fastapi server
+URL = "http://localhost:8000"  # fastapi server
 
 
 # Paths
@@ -14,4 +14,4 @@ SRC_PATH = ROOT_PATH / "src"
 
 TOOLS_PATH = SRC_PATH / "agents" / "tools"
 
-RESPONCE_LATENCY : float = 0.075
+RESPONCE_LATENCY: float = 0.075

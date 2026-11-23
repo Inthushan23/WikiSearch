@@ -16,9 +16,9 @@
 #     if page_py.exists():
 #         content = page_py.text
 #         return content[: int(len(content)*p)]
-#     else: 
+#     else:
 #         return None
-    
+
 # def get_summary(title: str, p: float = 1.0, thresh: int = math.inf):
 #     wiki = get_wiki()
 #     page_py = wiki.page(title)
@@ -28,5 +28,5 @@
 #             return content[: int(len(content)*p)]
 #         else:
 #             return content
-#     else: 
+#     else:
 #         return None

@@ -5,7 +5,6 @@ class MemoryManager:
     def __init__(self):
         self.memory_manager: dict = {}
 
-
     def create_memory(self, graph_name: str):
         memory = MemorySaver()
         self.memory_manager[graph_name] = memory

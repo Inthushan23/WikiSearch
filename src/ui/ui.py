@@ -1,4 +1,3 @@
-
 import chainlit as cl
 from chainlit.input_widget import TextInput
 import httpx
@@ -17,7 +16,6 @@ for user in users:
 
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str):
-
     for user in users:
         if user["username"] == username and user["password"] == password:
             return cl.User(identifier=username)
@@ -25,22 +23,22 @@ async def auth_callback(username: str, password: str):
     return None
 
 
-
 @cl.on_chat_start
 async def start():
-    await cl.ChatSettings([
-        TextInput(id="MODEL", label="Model's Name"),
-        TextInput(id="MODEL_URL", label="Model's URL")
-    ]).send()
+    await cl.ChatSettings(
+        [
+            TextInput(id="MODEL", label="Model's Name"),
+            TextInput(id="MODEL_URL", label="Model's URL"),
+        ]
+    ).send()
 
 
 @cl.on_settings_update
 async def update_settings(settings):
-
     payload = {
         "model_name": settings.get("MODEL"),
         "url": settings.get("MODEL_URL"),
-        "username": cl.user_session.get("user").identifier
+        "username": cl.user_session.get("user").identifier,
     }
 
     if not payload["model_name"] or not payload["url"]:
@@ -49,35 +47,29 @@ async def update_settings(settings):
     cl.user_session.set("MODEL_URL", settings.get("MODEL_URL"))
 
     async with httpx.AsyncClient(timeout=None) as client:
-        response = await client.post(
-            url=URL + "/config-graph",
-            json=payload
-        )
+        response = await client.post(url=URL + "/config-graph", json=payload)
 
         response.raise_for_status()
 
 
 @cl.on_message
 async def on_message(message: cl.Message):
-
     # Récupération de l'identifiant de conversation
     thread_id = cl.context.session.thread_id
     username = cl.user_session.get("user").identifier
     model_name = cl.user_session.get("MODEL")
     response = cl.Message(content="")
     async with httpx.AsyncClient(timeout=None) as client:
-
         async with client.stream(
             "POST",
-            URL+"/ask",
+            URL + "/ask",
             json={
                 "user_req": message.content,
                 "username": username,
-                "model_name": model_name, 
-                "thread_id": thread_id
-            }
+                "model_name": model_name,
+                "thread_id": thread_id,
+            },
         ) as api_response:
-
             api_response.raise_for_status()
 
             async for chunk in api_response.aiter_text():

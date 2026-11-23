@@ -8,7 +8,7 @@ requests
 qdrant-client
 Wikipedia-API
 nltk
-pandas 
+pandas
 unidecode
 sentence-transformers
 chainlit

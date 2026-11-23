@@ -34,3 +34,8 @@ py-modules = ["app", "config"]
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = true
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+]

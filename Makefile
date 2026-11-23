@@ -9,5 +9,5 @@ install:
 
 
 activate:
-	@echo Activate venv 
+	@echo Activate venv
 	@echo $(ACTIVATE)

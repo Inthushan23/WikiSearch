@@ -6,3 +6,4 @@
 - Address potential issues with the context window size (model saturation). (remove )
 - Implement document addition functionality.
 - Fix LangChainPendingDeprecationWarning
+- Adapting the command-line interface to an evolving architecture

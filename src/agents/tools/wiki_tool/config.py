@@ -21,7 +21,7 @@ RAG_RETRIEVE_LIMIT: int = 10
 # Encoder
 ENCODER_MODEL: str = "BAAI/bge-m3"  # Model from Hugging face
 
-MAX_WORKERS: int = 10
+MAX_WORKERS: int = 3
 
 CONTENT_LENGTH_THRESH: int = (
     2000  # Seuil au dessus du quel la taille du contexte est réduit

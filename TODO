@@ -1,7 +1,6 @@
 # TODO:
 - Add a `load` function to the `Encoder` class.
 - The model from HF should not be downloaded every time the code is executed.
-- Check the issue with the Makefile
 - Resolve the LLM cold-start problem.
 - Address potential issues with the context window size (model saturation). (remove )
 - Implement document addition functionality.

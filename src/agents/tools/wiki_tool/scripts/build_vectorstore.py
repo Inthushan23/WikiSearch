@@ -48,16 +48,6 @@ def create_embeddings():
         return
 
     data_ctx_titles = []  # contexts + titles
-    print("DEBUG")
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        print("DEBUG 1")
-        futures = {
-            executor.submit(add_context, title, 0.75, 400): (id, title)
-            for id, title in enumerate(titles_lst)
-        }
-        print("DEBUG 2")
-
-    data_ctx_titles = []  # contexts + titles
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
             executor.submit(add_context, title, 0.75, 400): (id, title)
@@ -80,8 +70,6 @@ def create_embeddings():
         print(id)
         point = models.PointStruct(id=id, vector=vec, payload={"title": title})
 
-        print(id, flush=True)
-        point = models.PointStruct(id=id, vector=vec, payload={"title": title})
         points.append(point)
 
     # for id, title in tqdm.tqdm(enumerate(titles_lst)):
@@ -93,7 +81,9 @@ def create_embeddings():
     #     point = models.PointStruct(id = id, vector = vec, payload={"title": title})
     #     points.append(point)
 
-    qdrant_cli.upsert(collection_name=COLLECTION_NAME, points=points)
+    qdrant_cli.upload_points(
+        collection_name=COLLECTION_NAME, points=points, batch_size=32
+    )
 
 
 if __name__ == "__main__":

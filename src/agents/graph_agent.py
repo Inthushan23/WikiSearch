@@ -1,10 +1,24 @@
+import ollama
 from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, trim_messages
+from langchain_core.runnables import RunnableLambda
 from langchain_ollama import ChatOllama
 from langgraph.prebuilt import ToolNode
 
 from agents.agent_state import AgentState
 from agents.tools import wikipedia_search
+
+
+def get_context_length(model_name: str, url: str) -> int:
+    client = ollama.Client(host=url)
+
+    response = client.show(model_name)
+
+    for key, value in response.modelinfo.items():
+        if key.endswith(".context_length"):
+            return int(value)
+
+    raise RuntimeError("Context length introuvable")
 
 
 def build_graph(model: str, url: str, username: str):
@@ -16,14 +30,28 @@ def build_graph(model: str, url: str, username: str):
 
     llm = llm.bind_tools(tools=tools)
 
+    context_length = get_context_length(model_name=model, url=url)
+    max_context_length = int(context_length * 0.8)
+
+    trimmer = RunnableLambda(
+        lambda messages: trim_messages(
+            messages,
+            max_tokens=max_context_length,
+            strategy="last",
+            include_system=True,
+            token_counter=llm,
+        )
+    )
+    chain = trimmer | llm
+
     def response(state: AgentState):
         messages = [
             SystemMessage(
-                content="Tu es un assistant qui doit répondre aux requetes de l'utilisateur. Tu dois  toujours founir une réponse. Utilise wiki_tool pour les questions factuelles."
+                content="Tu es un assistant qui doit répondre aux requetes de l'utilisateur. Tu dois  toujours founir une réponse."
             ),
             *state["messages"],
         ]
-        res = llm.invoke(messages)
+        res = chain.invoke(messages)
         return {"messages": [res]}
 
     def route_tools(state: AgentState):
@@ -35,7 +63,8 @@ def build_graph(model: str, url: str, username: str):
 
     def agent(state: AgentState):
         messages = [*state["messages"]]
-        res = llm.invoke(messages)
+        res = chain.invoke(messages)
+
         return {"messages": [res]}
 
     graph = StateGraph(AgentState)
@@ -49,6 +78,4 @@ def build_graph(model: str, url: str, username: str):
     graph.add_edge("tools", "agent")
     graph.add_edge("agent", END)
 
-    # checkpoiter = MemorySaver()
-    # comp_graph = graph.compile(checkpointer=checkpoiter)
     return graph

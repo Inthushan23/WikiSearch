@@ -3,8 +3,10 @@ from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import SystemMessage, trim_messages
 from langchain_core.runnables import RunnableLambda
 from langchain_ollama import ChatOllama
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode
 
+from config import OLLAMA_URL
 from agents.agent_state import AgentState
 from agents.tools import wikipedia_search
 
@@ -21,16 +23,15 @@ def get_context_length(model_name: str, url: str) -> int:
     raise RuntimeError("Context length introuvable")
 
 
-def build_graph(model: str, url: str, username: str):
+def build_graph(model: str):
     tools = [wikipedia_search]
     tool_node = ToolNode(tools)
-    name = username + "-" + model
 
-    llm = ChatOllama(name=name, model=model, base_url=url)
+    llm = ChatOllama(model=model, base_url=OLLAMA_URL)
 
     llm = llm.bind_tools(tools=tools)
 
-    context_length = get_context_length(model_name=model, url=url)
+    context_length = get_context_length(model_name=model, url=OLLAMA_URL)
     max_context_length = int(context_length * 0.8)
 
     trimmer = RunnableLambda(
@@ -40,6 +41,8 @@ def build_graph(model: str, url: str, username: str):
             strategy="last",
             include_system=True,
             token_counter=llm,
+            end_on=["human", "tool"],
+            allow_partial=False,
         )
     )
     chain = trimmer | llm
@@ -78,4 +81,7 @@ def build_graph(model: str, url: str, username: str):
     graph.add_edge("tools", "agent")
     graph.add_edge("agent", END)
 
-    return graph
+    memory = MemorySaver()
+    comp_graph = graph.compile(checkpointer=memory)
+
+    return comp_graph

@@ -3,8 +3,7 @@ from pathlib import Path
 
 # URLs
 MODEL = "model-expert:latest"
-# AGENT_URL = "http://localhost:11434"
-AGENT_URL = "https://old-steady-casinos-brand.trycloudflare.com"
+OLLAMA_URL = "http://localhost:11434"
 URL = "http://localhost:8000"  # fastapi server
 
 

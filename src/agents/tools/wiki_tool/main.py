@@ -9,6 +9,7 @@ def wikipedia_search(query: str):
     if query:
         print("QUERY: ", query)
         contexts = rag_search(query)
+
         if contexts:
             return "\n\n".join(contexts)
     return "No context could be retrieved"

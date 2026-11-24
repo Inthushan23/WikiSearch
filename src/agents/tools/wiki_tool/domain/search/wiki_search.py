@@ -31,9 +31,9 @@ def search(
 
 def rag_search(query: str):
     titles = rag_query(query=query)
+
     if not titles:
         return False
-
     contexts: list[str] = []
     for title in titles:
         res = search(title=title, p=0.5, thresh=CONTENT_LENGTH_THRESH)

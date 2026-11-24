@@ -1,6 +1,5 @@
 # TODO:
 - Add a `load` function to the `Encoder` class.
-<!-- - The model from HF should not be downloaded every time the code is executed. -->
-- Address potential issues with the context window size (model saturation).
 <!-- - Implement document addition functionality. -->
 - Adapting the command-line interface to an evolving architecture
+- Improving RAG efficiency

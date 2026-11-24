@@ -1,4 +1,13 @@
+import os
+from dotenv import load_dotenv
+from huggingface_hub import login
 from sentence_transformers import SentenceTransformer
+
+load_dotenv()
+
+hf_token = os.getenv("HF_TOKEN")
+if hf_token:
+    login(token=hf_token)
 
 
 class LoadModel:

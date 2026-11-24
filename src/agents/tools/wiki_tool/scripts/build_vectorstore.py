@@ -1,10 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from qdrant_client import models
-# import tqdm
 
-from ....utils.transform_utils.process_data import normalize
-from ....utils.transform_utils.encoder import Encoder
-from ....utils.loader_utils.load_data import load_filtered_text_data
+from agents.utils.transform_utils.process_data import normalize
+from agents.utils.transform_utils.encoder import Encoder
+from agents.utils.loader_utils.load_data import load_filtered_text_data
 from ..wiki_utils import add_context
 
 from ..config import (
@@ -49,22 +48,18 @@ def create_embeddings():
         return
 
     data_ctx_titles = []  # contexts + titles
-    print("DEBUG")
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        print("DEBUG 1")
         futures = {
             executor.submit(add_context, title, 0.75, 400): (id, title)
             for id, title in enumerate(titles_lst)
         }
-        print("DEBUG 2")
         for future in as_completed(futures):
             data = futures[future]  # id + title
             res = future.result()
-            print(data)
+            print(data, flush=True)
 
             data_ctx_titles.append((data, res))
 
-    print("END OF 'ADD CONTEXT'")
     id_title_data, ctx_titles = zip(*data_ctx_titles)
 
     norm_ctx_title = list(map(normalize, ctx_titles))
@@ -74,6 +69,7 @@ def create_embeddings():
         id, title = elt
         print(id)
         point = models.PointStruct(id=id, vector=vec, payload={"title": title})
+
         points.append(point)
 
     # for id, title in tqdm.tqdm(enumerate(titles_lst)):
@@ -85,7 +81,9 @@ def create_embeddings():
     #     point = models.PointStruct(id = id, vector = vec, payload={"title": title})
     #     points.append(point)
 
-    qdrant_cli.upsert(collection_name=COLLECTION_NAME, points=points)
+    qdrant_cli.upload_points(
+        collection_name=COLLECTION_NAME, points=points, batch_size=32
+    )
 
 
 if __name__ == "__main__":
